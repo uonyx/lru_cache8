@@ -23,11 +23,6 @@ int main ()
 ### LRU Algorithm
 A software implementation of the "Reference Matrix" method typically used in hardware combined with a linear probing hash table implementation
 
-#### Reference
-- [Hacker's Delight: 7-9](http://www.amazon.co.uk/Hackers-Delight-Henry-S-Warren/dp/0321842685/ref=dp_ob_title_bk)
-- [PHP's new hashtable implementation](https://nikic.github.io/2014/12/22/PHPs-new-hashtable-implementation.html)
-- [Linear Probing](https://en.wikipedia.org/wiki/Linear_probing)
-
 #### Demo
 ~~~~~~~~~~cpp
 #include "LRU8Cache.h"
@@ -60,3 +55,8 @@ cache.write (15, "fifteen");              // LRU == 1 [Key == 8], MRU == 3 [Key 
 
 cache.clear ();                           // LRU == 0, MRU == INVALID
 ~~~~~~~~~~
+
+#### References
+- [Hacker's Delight: 7-9](http://www.amazon.co.uk/Hackers-Delight-Henry-S-Warren/dp/0321842685/ref=dp_ob_title_bk)
+- [PHP's new hashtable implementation](https://nikic.github.io/2014/12/22/PHPs-new-hashtable-implementation.html)
+- [Linear Probing](https://en.wikipedia.org/wiki/Linear_probing)
