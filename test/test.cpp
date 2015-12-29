@@ -84,6 +84,7 @@ void run_test ()
     ok = cache.read ("two", &out);
   }
 
+#if LRU8_CPP11
   {
     LRU8Cache<const char *, void *, std::hash<const char *>> cache;
 
@@ -93,6 +94,7 @@ void run_test ()
     ok = cache.read ("one", &out);
     ok = cache.read ("two", &out);
   }
+#endif
 
   {
     LRU8Cache<uint32_t, void *> cache;

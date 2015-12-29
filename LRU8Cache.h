@@ -164,9 +164,9 @@ struct LRU8Equal
 
 #if LRU8_CPP11
 #include <functional>
-template<typename _Key, typename _Val, typename _KeyHash = std::hash<_Key>, typename _KeyEqual = std::equal_to<_Key>>
+template<typename _Key, typename _Val, typename _KeyHash = std::hash<_Key>, typename _KeyEqual = std::equal_to<_Key> >
 #else
-template<typename _Key, typename _Val, typename _KeyHash = LRU8Hash<_Key>, typename _KeyEqual = LRU8Equal<_Key>>
+template<typename _Key, typename _Val, typename _KeyHash = LRU8Hash<_Key>, typename _KeyEqual = LRU8Equal<_Key> >
 #endif
 class LRU8Cache
 {
