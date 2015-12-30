@@ -57,6 +57,5 @@ cache.clear ();                           // LRU == 0, MRU == INVALID
 ~~~~~~~~~~
 
 #### References
-- [Hacker's Delight: 7-9](http://www.amazon.co.uk/Hackers-Delight-Henry-S-Warren/dp/0321842685/ref=dp_ob_title_bk)
+- [Hacker's Delight: 7-9](https://books.google.co.uk/books?id=VicPJYM0I5QC&pg=PA167&lpg=PA167&dq=lru+reference+matrix&source=bl&ots=2n3ONWts2v&sig=jSe-zwZE2KsyhU_Lqtnbecj5Mxc&hl=en&sa=X&ved=0ahUKEwigxOTG2IPKAhXHxRQKHaBaBPsQ6AEISDAG)
 - [PHP's new hashtable implementation](https://nikic.github.io/2014/12/22/PHPs-new-hashtable-implementation.html)
-- [Linear Probing](https://en.wikipedia.org/wiki/Linear_probing)
