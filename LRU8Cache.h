@@ -89,9 +89,7 @@ template<typename _Key> struct LRU8HashBitwise
 {
   uint32_t operator() (_Key k) const
   {
-    const unsigned char *kd = reinterpret_cast<const unsigned char *>(&k);
-    size_t sz = sizeof (_Key);
-    return LRU8Hash_DJBX33X (kd, sz);
+    return LRU8Hash_DJBX33X (reinterpret_cast<const unsigned char *>(&k), sizeof (_Key));
   }
 };
 
@@ -115,50 +113,37 @@ template<typename _Key> struct LRU8Hash
 };
 #endif
 
-template<typename _Key> struct LRU8Hash<_Key *>
-{
-  uint32_t operator() (_Key *k) const
-  {
-    size_t i = reinterpret_cast<size_t>(k);
-    return static_cast<uint32_t>(i);
-  }
-};
-
 template<> struct LRU8Hash<char> : public LRU8HashNumeric<char> {};
-
 template<> struct LRU8Hash<unsigned char> : public LRU8HashNumeric<unsigned char> {};
-
 template<> struct LRU8Hash<short> : public LRU8HashNumeric<short> {};
-
 template<> struct LRU8Hash<unsigned short> : public LRU8HashNumeric<unsigned short> {};
-
 template<> struct LRU8Hash<int> : public LRU8HashNumeric<int> {};
-
 template<> struct LRU8Hash<unsigned int> : public LRU8HashNumeric<unsigned int> {};
-
 template<> struct LRU8Hash<long> : public LRU8HashBitwise<long> {};
-
 template<> struct LRU8Hash<unsigned long> : public LRU8HashBitwise<unsigned long> {};
-
 template<> struct LRU8Hash<long long> : public LRU8HashBitwise<long long> {};
-
 template<> struct LRU8Hash<unsigned long long> : public LRU8HashBitwise<unsigned long long> {};
-
 template<> struct LRU8Hash<std::string>
 {
   uint32_t operator() (const std::string &k) const
   {
-    const unsigned char *kd = reinterpret_cast<const unsigned char *>(k.c_str ());
-    size_t sz = k.size ();
-    return LRU8Hash_DJBX33X (kd, sz);
+    return LRU8Hash_DJBX33X (reinterpret_cast<const unsigned char *>(k.c_str ()), k.size ());
+  }
+};
+
+template<typename _Key> struct LRU8Hash<_Key *>
+{
+  uint32_t operator() (_Key *k) const 
+  { 
+    return static_cast<uint32_t>(reinterpret_cast<size_t>(k)); 
   }
 };
 
 template<typename _Key> struct LRU8EqualTo
 {
-  bool operator() (const _Key &k1, const _Key &k2) const
-  {
-    return (k1 == k2);
+  bool operator() (const _Key &k1, const _Key &k2) const 
+  { 
+    return (k1 == k2); 
   }
 };
 
@@ -368,7 +353,6 @@ private:
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x06,
-
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
