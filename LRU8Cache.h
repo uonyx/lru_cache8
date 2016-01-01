@@ -45,7 +45,7 @@
 // These provides better support for STL data types (but is platform-dependent).
 #define LRU8CACHE_PREFER_CPP11_FUNCTION_DEFAULTS (LRU8CACHE_CPP11 && 1)
 
-#if !LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU && defined (LRU8CACHE_ENABLE_INTRINSICS)
+#if !LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU && defined (LRU8CACHE_ENABLE_INTRINSICS) && defined (_MSC_VER)
 #define LRU8CACHE_USE_INTRINSICS 
 #endif
 
@@ -56,10 +56,8 @@
 #include <stdint.h>
 
 #ifdef LRU8CACHE_USE_INTRINSICS
-#ifdef _MSC_VER
 #include <intrin.h>
 #define _lru8_nlz __lzcnt64
-#endif
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -336,7 +334,7 @@ private:
 
 #if LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU
 
-    // search of an all-zero byte    
+    // search for zero byte    
     if ((m & 0x00000000000000ff) == 0) return 0;
     if ((m & 0x000000000000ff00) == 0) return 1;
     if ((m & 0x0000000000ff0000) == 0) return 2;
@@ -349,7 +347,7 @@ private:
 
 #else
 
-    // search of an all-zero byte (branch-free)
+    // search for zero byte (branch-free)
     static const uint64_t c = 0x7f7f7f7f7f7f7f7f;
     
     uint64_t y = (m & c) + c;
