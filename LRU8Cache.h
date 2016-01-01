@@ -35,12 +35,19 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+// debug stuff
+#define LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU 0
+
 // Is compiler is C++11 or newer?
-#define LRU8_CPP11 (__cplusplus >= 201103L) || (_MSC_VER >= 1600)
+#define LRU8CACHE_CPP11 (__cplusplus >= 201103L) || (_MSC_VER >= 1600)
 
 // Use C++11 native 'hash' and 'equal_to' functions as defaults. 
 // These provides better support for STL data types (but is platform-dependent).
-#define LRU8_PREFER_CPP11_FUNCTION_DEFAULTS (LRU8_CPP11 && 1)
+#define LRU8CACHE_PREFER_CPP11_FUNCTION_DEFAULTS (LRU8CACHE_CPP11 && 1)
+
+#if !LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU && defined (LRU8CACHE_ENABLE_INTRINSICS)
+#define LRU8CACHE_USE_INTRINSICS 
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,11 +55,18 @@
 
 #include <stdint.h>
 
+#ifdef LRU8CACHE_USE_INTRINSICS
+#ifdef _MSC_VER
+#include <intrin.h>
+#define _lru8_nlz __lzcnt64
+#endif
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if LRU8_PREFER_CPP11_FUNCTION_DEFAULTS
+#if LRU8CACHE_PREFER_CPP11_FUNCTION_DEFAULTS
 
 #include <functional>
 
@@ -91,7 +105,7 @@ template<typename _Key> struct LRU8HashNumeric
   }
 };
 
-#if LRU8_CPP11
+#if LRU8CACHE_CPP11
 #include <type_traits>
 template<typename _Key> struct LRU8Hash : public LRU8HashBitwise<_Key>
 {
@@ -166,7 +180,12 @@ class LRU8Cache
 {
 private:
 
+#if LRU8CACHE_CPP11
+  static_assert (sizeof (uint64_t) == 8, "LRU8Cache not supported");
+#endif
+
   static const uint8_t MAX_SIZE = sizeof (uint64_t);
+  static const uint8_t MAX_SIZE_MINUS_ONE = MAX_SIZE - 1;
   static const uint8_t IDX_INVALID = 0xff;
 
   struct node_t
@@ -193,8 +212,8 @@ public:
 
   void write (const _Key &key, _Val val)
   {
-    uint32_t h = (uint32_t) this->m_keyHash (key);
-    uint8_t  i = h % MAX_SIZE;
+    uint32_t h = (uint32_t) this->m_khash (key);
+    uint8_t  i = h & MAX_SIZE_MINUS_ONE;
     uint8_t idx = m_lmap [i];
 
     uint8_t lru_idx = this->get_matrix_lru ();
@@ -202,7 +221,7 @@ public:
     {
       // if key exists, update value
       node_t *n = &m_node [idx];
-      if ((n->m_hash == h) && this->m_keyEqual (n->m_key, key))
+      if ((n->m_hash == h) && this->m_kequal (n->m_key, key))
       {
         n->m_val = val;
         this->set_matrix_mru (idx);
@@ -210,7 +229,7 @@ public:
       }
 
       // probe next slot
-      i = (i + 1) % MAX_SIZE;
+      i = (i + 1) & MAX_SIZE_MINUS_ONE;
       idx = m_lmap [i];
     }
 
@@ -225,22 +244,22 @@ public:
 
   bool read (const _Key &key, _Val *val)
   {
-    uint32_t h = (uint32_t) this->m_keyHash (key);
-    uint8_t  i = h % MAX_SIZE;
+    uint32_t h = (uint32_t) this->m_khash (key);
+    uint8_t  i = h & MAX_SIZE_MINUS_ONE;
     uint8_t idx = m_lmap [i];
 
     uint8_t c = 0;
     while ((idx != IDX_INVALID) && (c++ < MAX_SIZE))
     {
       node_t *n = &m_node [idx];
-      if ((n->m_hash == h) && this->m_keyEqual (n->m_key, key))
+      if ((n->m_hash == h) && this->m_kequal (n->m_key, key))
       {
-        this->set_matrix_mru (idx);
         *val = n->m_val;
+        this->set_matrix_mru (idx);
         return true;
       }
 
-      i = (i + 1) % MAX_SIZE;
+      i = (i + 1) & MAX_SIZE_MINUS_ONE;
       idx = m_lmap [i];
     }
 
@@ -313,8 +332,11 @@ private:
 
   uint8_t get_matrix_lru ()
   {
-    // search of an all-zero byte
     uint64_t m = m_matrix;
+
+#if LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU
+
+    // search of an all-zero byte    
     if ((m & 0x00000000000000ff) == 0) return 0;
     if ((m & 0x000000000000ff00) == 0) return 1;
     if ((m & 0x0000000000ff0000) == 0) return 2;
@@ -324,6 +346,47 @@ private:
     if ((m & 0x00ff000000000000) == 0) return 6;
     if ((m & 0xff00000000000000) == 0) return 7;
     return 0xff;
+
+#else
+
+    // search of an all-zero byte (branch-free)
+    static const uint64_t c = 0x7f7f7f7f7f7f7f7f;
+    
+    uint64_t y = (m & c) + c;
+    y = ~(y | m | c);
+
+#ifdef LRU8CACHE_USE_INTRINSICS
+    uint64_t n = _lru8_nlz (y);               // number of leading zero bits from the right
+    uint8_t r = static_cast<uint8_t>(n >> 3); // convert bit count to bytes
+    return 7u - r;                            // reverse index position to the left
+#else    
+    static const uint8_t nlzlut [128] =
+    {
+      0x00, 0x01, 0xff, 0x02, 0xff, 0xff, 0xff, 0x03,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x04,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x06,
+
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x07,
+    };
+
+    uint8_t idx = ((y * 0x0002040810204081) >> 56) - 1;
+    uint8_t r = nlzlut [idx];
+    return r;
+#endif
+
+#endif
   }
 
   //////////////////////////////////////////////////////////////////
@@ -333,7 +396,7 @@ private:
   void set_matrix_mru (uint8_t i)
   {
     // set row i (every bit of byte i) to 1s
-    uint64_t rmask = 0xffull << (8 * i);
+    uint64_t rmask = 0xffull << (MAX_SIZE * i);
     m_matrix |= rmask;
 
     // set column i (all i-th bits of each byte) to 0s     
@@ -348,8 +411,8 @@ private:
   node_t      m_node [MAX_SIZE];
   uint8_t     m_lmap [MAX_SIZE];
   uint64_t    m_matrix;
-  _KeyHash    m_keyHash;
-  _KeyEqual   m_keyEqual;
+  _KeyHash    m_khash;
+  _KeyEqual   m_kequal;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
