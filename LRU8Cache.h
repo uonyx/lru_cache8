@@ -164,11 +164,11 @@ class LRU8Cache
 private:
 
 #if LRU8CACHE_CPP11
-  static_assert (sizeof (uint64_t) == 8, "LRU8Cache not supported");
+  static_assert (sizeof (uint64_t) == 8, "LRU8Cache not usable on this platform");
 #endif
 
   static const uint8_t MAX_SIZE = sizeof (uint64_t);
-  static const uint8_t MAX_SIZE_MINUS_ONE = MAX_SIZE - 1;
+  static const uint8_t MAX_SIZE_MINUS_1 = MAX_SIZE - 1;
   static const uint8_t IDX_INVALID = 0xff;
 
   struct node_t
@@ -193,10 +193,10 @@ public:
   //////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////
 
-  void write (const _Key &key, _Val val)
+  void write (const _Key &key, const _Val &val)
   {
     uint32_t h = (uint32_t) this->m_khash (key);
-    uint8_t  i = h & MAX_SIZE_MINUS_ONE;
+    uint8_t  i = h & MAX_SIZE_MINUS_1;
     uint8_t idx = m_lmap [i];
 
     uint8_t lru_idx = this->get_matrix_lru ();
@@ -212,7 +212,7 @@ public:
       }
 
       // probe next slot
-      i = (i + 1) & MAX_SIZE_MINUS_ONE;
+      i = (i + 1) & MAX_SIZE_MINUS_1;
       idx = m_lmap [i];
     }
 
@@ -228,7 +228,7 @@ public:
   bool read (const _Key &key, _Val *val)
   {
     uint32_t h = (uint32_t) this->m_khash (key);
-    uint8_t  i = h & MAX_SIZE_MINUS_ONE;
+    uint8_t  i = h & MAX_SIZE_MINUS_1;
     uint8_t idx = m_lmap [i];
 
     uint8_t c = 0;
@@ -242,7 +242,7 @@ public:
         return true;
       }
 
-      i = (i + 1) & MAX_SIZE_MINUS_ONE;
+      i = (i + 1) & MAX_SIZE_MINUS_1;
       idx = m_lmap [i];
     }
 
@@ -294,7 +294,7 @@ private:
       00111111
       01111111
     */
-
+#if 0
     uint64_t m = 0;
     uint8_t p = 0;
     for (uint8_t i = 1; i < MAX_SIZE; ++i)
@@ -307,6 +307,9 @@ private:
     }
 
     m_matrix = m;
+#else
+    m_matrix = 0x7f3f1f0f07030100;
+#endif
   }
 
   //////////////////////////////////////////////////////////////////
