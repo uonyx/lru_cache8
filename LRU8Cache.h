@@ -381,7 +381,7 @@ private:
   void set_matrix_mru (uint8_t i)
   {
     // set row i (every bit of byte i) to 1s
-    uint64_t rmask = 0xffull << (MAX_SIZE * i);
+    uint64_t rmask = 0xffull << (i << 3);
     m_matrix |= rmask;
 
     // set column i (all i-th bits of each byte) to 0s     
