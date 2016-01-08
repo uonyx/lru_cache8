@@ -2,7 +2,7 @@
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 
-// #define LRU8CACHE_ENABLE_INTRINSICS
+//#define LRUCACHE8_ENABLE_INTRINSICS
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
@@ -51,14 +51,14 @@ void run_test ()
   void *out = NULL;
 
   {
-    LRU8Cache<const char *, void *> cache;    
+    lru_cache8<const char *, void *> cache;    
 
     cache.write ("one", (void *) 1);
     cache.write ("two", (void *) 2);
   }
 
   {
-    LRU8Cache<std::string, void *> cache;
+    lru_cache8<std::string, void *> cache;
 
     cache.write ("one",   (void *) 0);
     cache.write ("one",   (void *) 1);
@@ -82,7 +82,7 @@ void run_test ()
   }
 
   {
-    LRU8Cache<const char *, void *, RawStringHash, RawStringEqual> cache;
+    lru_cache8<const char *, void *, RawStringHash, RawStringEqual> cache;
 
     cache.write ("one", (void *) 1);
     cache.write ("two", (void *) 2);
@@ -91,9 +91,9 @@ void run_test ()
     ok = cache.read ("two", &out);
   }
 
-#if LRU8CACHE_CPP11
+#if LRUCACHE8_CPP11
   {
-    LRU8Cache<const char *, void *, std::hash<const char *>> cache;
+    lru_cache8<const char *, void *, std::hash<const char *>> cache;
 
     cache.write ("one", (void *) 1);
     cache.write ("two", (void *) 2);
@@ -104,7 +104,7 @@ void run_test ()
 #endif
 
   {
-    LRU8Cache<uint32_t, void *> cache;
+    lru_cache8<uint32_t, void *> cache;
 
     cache.write (0, (void *) 10);
     cache.write (1, (void *) 11);
@@ -116,7 +116,7 @@ void run_test ()
   }
 
   {
-    LRU8Cache<std::string, std::string> cache;
+    lru_cache8<std::string, std::string> cache;
 
     cache.write ("pi", "3.14");
     cache.write ("street", "sesame");
@@ -132,13 +132,13 @@ void run_test ()
   }
 
   {
-    LRU8Cache<std::string *, void *> cache;
+    lru_cache8<std::string *, void *> cache;
 
     std::string tk ("test");
     cache.write (&tk, (void *) 0);
   }
 
-#if LRU8CACHE_CPP11
+#if LRUCACHE8_CPP11
   {
     enum enomnom
     {
@@ -146,7 +146,7 @@ void run_test ()
       nom_nom_2,
     };
 
-    LRU8Cache<enomnom, void *> cache;
+    lru_cache8<enomnom, void *> cache;
     cache.write (nom_nom_1, (void *) 0);
   }
 #endif
@@ -164,7 +164,7 @@ void run_test ()
       }
     };
 
-    LRU8Cache<dumb, void *> cache;
+    lru_cache8<dumb, void *> cache;
     cache.write ("one", (void *) 0);
   }
 #endif
@@ -179,7 +179,7 @@ void run_debug ()
   // The appended comments on each line shows the internal cache state 
   // (of the data location and keys) after execution of each statement
 
-  LRU8Cache<uint32_t, std::string> cache;   // LRU == 0, MRU == INVALID
+  lru_cache8<uint32_t, std::string> cache;   // LRU == 0, MRU == INVALID
 
   cache.write (0, "zero");                  // LRU == 1 [Key == nil], MRU == 0 [Key == 0]
   cache.write (1, "one");                   // LRU == 2 [Key == nil], MRU == 1 [Key == 1]

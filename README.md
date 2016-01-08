@@ -1,13 +1,13 @@
-LRU8Cache
+lru_cache8
 ========================================================================
 A very small and fast 8-element LRU cache.
 
 ### Usage
 ~~~~~~~~~~cpp
-#include "LRU8Cache.h"
+#include "lru_cache8.h"
 
 MainStorage mainStorage;
-LRU8Cache<std::string, std::string *> cache;  
+lru_cache8<std::string, std::string *> cache;  
 
 int main ()
 {
@@ -25,11 +25,11 @@ A software implementation of the "Reference Matrix" method typically used in har
 
 #### Demo
 ~~~~~~~~~~cpp
-#include "LRU8Cache.h"
+#include "lru_cache8.h"
 // The appended comments on each line shows the internal cache state 
 // (of the data location and keys) after execution of each statement
 
-LRU8Cache<uint32_t, std::string> cache;   // LRU == 0, MRU == INVALID
+lru_cache8<uint32_t, std::string> cache;   // LRU == 0, MRU == INVALID
 
 cache.write (0, "zero");                  // LRU == 1 [Key == nil], MRU == 0 [Key == 0]
 cache.write (1, "one");                   // LRU == 2 [Key == nil], MRU == 1 [Key == 1]

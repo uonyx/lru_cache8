@@ -28,25 +28,25 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef LRU8CACHE_H
-#define LRU8CACHE_H
+#ifndef LRUCACHE8_H
+#define LRUCACHE8_H
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 // debug stuff
-#define LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU 0
+#define LRUCACHE8_DEBUG_DISABLE_BRANCH_FREE_LRU 0
 
 // Is compiler is C++11 or newer?
-#define LRU8CACHE_CPP11 (__cplusplus >= 201103L) || (_MSC_VER >= 1600)
+#define LRUCACHE8_CPP11 (__cplusplus >= 201103L) || (_MSC_VER >= 1600)
 
 // Use C++11 native 'hash' and 'equal_to' functions as defaults. 
 // These provides better support for STL data types (but is platform-dependent).
-#define LRU8CACHE_PREFER_CPP11_FUNCTION_DEFAULTS (LRU8CACHE_CPP11 && 1)
+#define LRUCACHE8_PREFER_CPP11_FUNCTION_DEFAULTS (LRUCACHE8_CPP11 && 1)
 
-#if !LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU && defined (LRU8CACHE_ENABLE_INTRINSICS) && defined (_MSC_VER)
-#define LRU8CACHE_USE_INTRINSICS 
+#if !LRUCACHE8_DEBUG_DISABLE_BRANCH_FREE_LRU && defined (LRUCACHE8_ENABLE_INTRINSICS) && defined (_MSC_VER)
+#define LRUCACHE8_USE_INTRINSICS 
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,16 +55,16 @@
 
 #include <stdint.h>
 
-#ifdef LRU8CACHE_USE_INTRINSICS
+#ifdef LRUCACHE8_USE_INTRINSICS
 #include <intrin.h>
-#define _lru8_nlz __lzcnt64
+#define _lc8_nlz __lzcnt64
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if LRU8CACHE_PREFER_CPP11_FUNCTION_DEFAULTS
+#if LRUCACHE8_PREFER_CPP11_FUNCTION_DEFAULTS
 
 #include <functional>
 
@@ -78,7 +78,7 @@ template<typename _Key, typename _Val, typename _KeyHash = std::hash<_Key>, type
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-uint32_t LRU8Hash_DJBX33X (const unsigned char *src, size_t sz)
+uint32_t LC8Hash_DJBX33X (const unsigned char *src, size_t sz)
 {
   uint32_t hash = 5381;
   for (size_t i = 0; i < sz; ++i) { hash = ((hash << 5) + hash) ^ src [i]; }
@@ -89,7 +89,7 @@ template<typename _Key> struct LRU8HashBitwise
 {
   uint32_t operator() (_Key k) const
   {
-    return LRU8Hash_DJBX33X (reinterpret_cast<const unsigned char *>(&k), sizeof (_Key));
+    return LC8Hash_DJBX33X (reinterpret_cast<const unsigned char *>(&k), sizeof (_Key));
   }
 };
 
@@ -101,7 +101,7 @@ template<typename _Key> struct LRU8HashNumeric
   }
 };
 
-#if LRU8CACHE_CPP11
+#if LRUCACHE8_CPP11
 #include <type_traits>
 template<typename _Key> struct LRU8Hash : public LRU8HashBitwise<_Key>
 {
@@ -127,7 +127,7 @@ template<> struct LRU8Hash<std::string>
 {
   uint32_t operator() (const std::string &k) const
   {
-    return LRU8Hash_DJBX33X (reinterpret_cast<const unsigned char *>(k.c_str ()), k.size ());
+    return LC8Hash_DJBX33X (reinterpret_cast<const unsigned char *>(k.c_str ()), k.size ());
   }
 };
 
@@ -159,12 +159,12 @@ template<typename _Key, typename _Val, typename _KeyHash = LRU8Hash<_Key>, typen
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-class LRU8Cache
+class lru_cache8
 {
 private:
 
-#if LRU8CACHE_CPP11
-  static_assert (sizeof (uint64_t) == 8, "LRU8Cache not usable on this platform");
+#if LRUCACHE8_CPP11
+  static_assert (sizeof (uint64_t) == 8, "lru_cache8 not usable on this platform");
 #endif
 
   static const uint8_t MAX_SIZE = sizeof (uint64_t);
@@ -263,7 +263,7 @@ public:
   //////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////
 
-  LRU8Cache () : m_matrix (0)
+  lru_cache8 () : m_matrix (0)
   {
     this->clear ();
   }
@@ -320,7 +320,7 @@ private:
   {
     uint64_t m = m_matrix;
 
-#if LRU8CACHE_DEBUG_DISABLE_BRANCH_FREE_LRU
+#if LRUCACHE8_DEBUG_DISABLE_BRANCH_FREE_LRU
 
     // search for zero byte    
     if ((m & 0x00000000000000ff) == 0) return 0;
@@ -336,14 +336,13 @@ private:
 #else
 
     // search for zero byte (branch-free)
-    static const uint64_t c = 0x7f7f7f7f7f7f7f7f;
-    
+    static const uint64_t c = 0x7f7f7f7f7f7f7f7f;    
     uint64_t y = (m & c) + c;
-    y = ~(y | m | c);
+    y = ~(y | m | c);                         // convert 0-bytes to 0x80 and non-0-bytes to 0x00
 
-#ifdef LRU8CACHE_USE_INTRINSICS
-    uint64_t n = _lru8_nlz (y);               // number of leading zero bits from the right
-    uint8_t r = static_cast<uint8_t>(n >> 3); // convert bit count to bytes
+#ifdef LRUCACHE8_USE_INTRINSICS
+    uint64_t n = _lc8_nlz (y);                // number of leading zero bits from the right
+    uint8_t r = static_cast<uint8_t>(n >> 3); // convert bit count to byte count
     return 7u - r;                            // reverse index position to the left
 #else    
     static const uint8_t nlzlut [128] =
