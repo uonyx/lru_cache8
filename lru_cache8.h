@@ -87,7 +87,7 @@ uint32_t LC8Hash_DJBX33X (const unsigned char *src, size_t sz)
 
 template<typename _Key> struct LRU8HashBitwise
 {
-  uint32_t operator() (_Key k) const
+  uint32_t operator() (const _Key &k) const
   {
     return LC8Hash_DJBX33X (reinterpret_cast<const unsigned char *>(&k), sizeof (_Key));
   }
@@ -163,10 +163,6 @@ class lru_cache8
 {
 private:
 
-#if LRUCACHE8_CPP11
-  static_assert (sizeof (uint64_t) == 8, "lru_cache8 not usable on this platform");
-#endif
-
   static const uint8_t MAX_SIZE = sizeof (uint64_t);
   static const uint8_t MAX_SIZE_MINUS_1 = MAX_SIZE - 1;
   static const uint8_t IDX_INVALID = 0xff;
@@ -177,7 +173,7 @@ private:
     _Val      m_val;
     uint32_t  m_hash;
 
-    void set (_Key key, _Val val, uint32_t hash)
+    void set (const _Key &key, const _Val &val, uint32_t hash)
     {
       m_key = key;
       m_val = val;
@@ -196,11 +192,11 @@ public:
   void write (const _Key &key, const _Val &val)
   {
     uint32_t h = (uint32_t) this->m_khash (key);
-    uint8_t  i = h & MAX_SIZE_MINUS_1;
+    uint8_t  i = h & MAX_SIZE_MINUS_1; // optimized form of [h % MAX_SIZE]
     uint8_t idx = m_lmap [i];
 
     uint8_t lru_idx = this->get_matrix_lru ();
-    while ((idx != lru_idx) && (idx != IDX_INVALID))
+    while ((idx != IDX_INVALID) && (idx != lru_idx))
     {
       // if key exists, update value
       node_t *n = &m_node [idx];
@@ -294,22 +290,8 @@ private:
       00111111
       01111111
     */
-#if 0
-    uint64_t m = 0;
-    uint8_t p = 0;
-    for (uint8_t i = 1; i < MAX_SIZE; ++i)
-    {
-      uint8_t n = p | (1 << (i - 1));
-      uint64_t n64 = static_cast<uint64_t>(n);
-      uint64_t mask = (n64 << (MAX_SIZE * i));
-      m |= mask;
-      p = n;
-    }
 
-    m_matrix = m;
-#else
     m_matrix = 0x7f3f1f0f07030100;
-#endif
   }
 
   //////////////////////////////////////////////////////////////////
@@ -380,7 +362,7 @@ private:
   void set_matrix_mru (uint8_t i)
   {
     // set row i (every bit of byte i) to 1s
-    uint64_t rmask = 0xffull << (i << 3);
+    uint64_t rmask = 0xffull << (i << 3); // optimized form of [i * MAX_SIZE]
     m_matrix |= rmask;
 
     // set column i (all i-th bits of each byte) to 0s     
